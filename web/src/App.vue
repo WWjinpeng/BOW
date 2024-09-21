@@ -1,30 +1,55 @@
 <template>
-  <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
+  
+  <!-- <div>Bot昵称: {{ bot_name }}</div> -->
+  <!-- <div>Bot战力: {{ bot_rating }}</div> -->
+  <body>
+    <h1>BOW-yuan神启动</h1>
+  </body>
   <router-view/>
-</template>
-
+  </template>
+<script>
+import $ from 'jquery';
+import { ref, onMounted } from 'vue'; // 确保引入 onMounted
+export default{
+  name:"APP",
+  setup:() =>{
+    let bot_name = ref("");
+    let bot_rating = ref("");
+    $.ajax({
+      url:"http://127.0.0.1:3000/pk/getbotinfo/",
+      type: "get",
+      success: resp =>{
+        bot_name.value = resp.name;
+        bot_rating.value = resp.rating;
+      }
+    })
+    onMounted(() => {
+      document.title = "Battle On Web"; // 设置页面标题
+    });
+    return {
+      bot_name,
+      bot_rating
+    };
+  }
+}
+</script>
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+h1{
   text-align: center;
-  color: #2c3e50;
+  z-index: 3;
+  font-size: 50px;
 }
-
-nav {
-  padding: 30px;
-}
-
-nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-nav a.router-link-exact-active {
-  color: #42b983;
-}
+body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('/src/assets/霞.jpg');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.5; /* 设置透明度 */
+      z-index: -1; /* 保证背景在内容下方 */
+    }
 </style>
