@@ -6,19 +6,27 @@
 <script>
 import {GameMap} from '../assets/scripts/GameMapObject';
 import { ref, onMounted} from 'vue';
-export default{
-    setup(){
+import { useStore } from 'vuex';
+export default {
+    setup() {
+        const store = useStore();
         let parent = ref(null);
         let canvas = ref(null);
-        onMounted(()=>{
-            new GameMap(canvas.value.getContext('2d'),parent.value)
+
+        onMounted(() => {
+            store.commit(
+                "updateGameObject",
+            new GameMap(canvas.value.getContext('2d'), parent.value, store)
+            );
         });
+
         return {
             parent,
             canvas
         }
     }
 }
+
 </script>
 <style scoped>
 div.gamemap{
