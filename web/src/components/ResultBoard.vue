@@ -26,7 +26,7 @@ import { useStore } from 'vuex';
 export default {
     setup() {
         const store = useStore();
-
+        
         const restart = () => {
             store.commit("updateStatus", "matching");
             store.commit("updateLoser", "none");

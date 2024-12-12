@@ -3,7 +3,11 @@ package com.bow.backend.consumer.utils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.bow.backend.consumer.WebSocketServer;
+import com.bow.backend.pojo.Bot;
 import com.bow.backend.pojo.Record;
+import com.bow.backend.pojo.User;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -23,13 +27,31 @@ public class Game extends Thread{
     private ReentrantLock lock = new ReentrantLock();
     private String status = "playing"; // playing->finished
     private String loser = ""; // all：平局 A：A输 B：B输
-    public Game(Integer rows, Integer cols, Integer obstacle, Integer idA, Integer idB) {
+    private final static String addBotUrl = "http://127.0.0.1:3002/bot/add/";
+    public Game(Integer rows,
+                Integer cols,
+                Integer obstacle,
+                Integer idA,
+                Bot botA,
+                Integer idB,
+                Bot botB
+    ) {
         this.rows = rows;
         this.cols = cols;
         this.obstacle = obstacle;
         this.g = new int[rows][cols];
-        playerA = new Player(idA,rows-2,1,new ArrayList<>());
-        playerB = new Player(idB,1,cols-2,new ArrayList<>());
+        Integer botIdA = -1, botIdB = -1;
+        String botCodeA = "", botCodeB = "";
+        if(botA != null) {
+            botIdA = botA.getId();
+            botCodeA = botA.getContent();
+        }
+        if(botB != null) {
+            botIdB = botB.getId();
+            botCodeB = botB.getContent();
+        }
+        playerA = new Player(idA,botIdA,botCodeA,rows-2,1,new ArrayList<>());
+        playerB = new Player(idB,botIdB,botCodeB,1,cols-2,new ArrayList<>());
     }
     public Player getPlayerA() {
         return playerA;
@@ -114,12 +136,41 @@ public class Game extends Thread{
                 break;
         }
     }
+    private String getInput(Player player){ //将当前的局面信息编码成一个字符串
+        // [地图+起始坐标sx#起始坐标sy#(我的操作)#对手的起始坐标sx#对手的起始坐标sy#对手的操作]
+        Player me,you;
+        if(playerA.getId().equals(player.getId())){
+            me = playerA;
+            you = playerB;
+        }
+        else{
+            me = playerB;
+            you = playerA;
+        }
+        return getMapString() + "#" +
+                me.getSx() + "#" +
+                me.getSy() + "#(" +
+                me.getStepsString() + ")#" +
+                you.getSx() + "#" +
+                you.getSy() + "#(" +
+                you.getStepsString() + ")";
+    }
+    private void sendBotCode(Player player){
+        if(player.getBotId().equals(-1)) return;
+        MultiValueMap<String,String> data = new LinkedMultiValueMap<>();
+        data.add("user_id",player.getId().toString());
+        data.add("bot_code",player.getBotCode());
+        data.add("input",getInput(player));
+        WebSocketServer.restTemplate.postForObject(addBotUrl,data,String.class);
+    }
     private boolean nextStep(){ //等待两名玩家的下一步操作
         try {
             Thread.sleep(200);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        sendBotCode(playerA);
+        sendBotCode(playerB);
         for(int i=0;i<50;i++){
             try{
                 Thread.sleep(100);
@@ -204,9 +255,24 @@ public class Game extends Thread{
         }
         return res.toString();
     }
+    private void updateUserRating(Player player, Integer rating) {
+        User user = WebSocketServer.userMapper.selectById(player.getId());
+        user.setRating(rating);
+        WebSocketServer.userMapper.updateById(user);
+    }
 
     private void saveToDatabase() {
-
+        Integer ratingA = WebSocketServer.userMapper.selectById(playerA.getId()).getRating();
+        Integer ratingB = WebSocketServer.userMapper.selectById(playerB.getId()).getRating();
+        if ("A".equals(loser)) {
+            ratingA -= 3;
+            ratingB += 5;
+        } else if ("B".equals(loser)) {
+            ratingA += 5;
+            ratingB -= 3;
+        }
+        updateUserRating(playerA, ratingA);
+        updateUserRating(playerB, ratingB);
         Record record = new Record(
                 null,
 

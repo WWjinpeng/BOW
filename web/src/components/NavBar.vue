@@ -4,7 +4,7 @@
     <a class="navbar-brand" href="#">
       <img src="../assets/images/贪吃蛇.jpg" alt="Bootstrap" width="30" height="24">
     </a>
-    <router-link class="navbar-brand" :to="{name:'home'}">贪吃蛇-联机对战-AI对战</router-link>
+    <router-link class="navbar-brand" :to="{name:'home'}">贪吃蛇匹配对战系统</router-link>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
